@@ -172,7 +172,7 @@ master = {
 username = "abc"
 password = "some#password123"
 
-[html]
+[html.structure]
 head = {
    title = "test title",
 }
