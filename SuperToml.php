@@ -1,16 +1,32 @@
 <?php
 /* chat gpt 4:
 
-please write a php class named SuperTomlConvertor to convert the following string:
+please write a php class named SuperTomlParser to convert the following string:
 [db.info]
 master = {
      username = "root",
-     password = "a#76dd1",
+     password = "a#76dd1"
      driver = {
-           key = "jim"
-           remote = true
+           key = "jim",
+           remote = true,
            use_pdo = false
      }
+}
+
+[anotherdb.info]
+master = { 
+     username = "root",
+     password = "a#76dd1"
+     driver = {
+           key = "jim",
+           remote = true,
+           use_pdo = false
+     }
+}
+
+[html]
+    head = {
+       title = "test title"
 }
 
 [github]
@@ -20,63 +36,72 @@ password = "some#password123"
 
 to the following:
 db.info.master.username = "root"
-db.info.master.password = "1234"
+db.info.master.password = "a#76dd1"
 db.info.master.driver.key = "jim"
+db.info.master.driver.remote = true
+db.info.master.driver.use_pdo = false
+anotherdb.info.username = "root"
+anotherdb.info.password = "a#76dd1"
+anotherdb.info.master.driver.key = "jim"
+anotherdb.info.master.driver.remote = true
+anotherdb.info.master.driver.use_pdo = false
 github.username = "abc"
 github.password = "some#password123"
+html.head.title = "test title"
 then parse the string above to a php associate array
 
 please note that a value can be either a number, a string or a boolean
 
-wrap the logics above to the method named convert
+when the value is a string, it must be wrapped in double quote or single quote
+
+wrap the logics above to the method named parse
 
 show me the full php code
 
- */
+*/
 
-class SuperTomlConverter {
+class SuperTomlParser {
     /**
-     * Converts a structured string to a flattened format and then parses it
-     * into an associative array, handling different value types.
+     * Parses the structured string into an associative array.
      *
-     * @param string $inputString The structured input string.
+     * @param string $inputString The structured TOML-like string.
      * @return array The associative array representation of the input.
      */
-    public function convert($inputString) {
+    public function parse($inputString) {
         $flattenedString = $this->flattenString($inputString);
         return $this->parseToAssociativeArray($flattenedString);
     }
 
     /**
-     * Flattens a structured string into a dot notation string.
+     * Converts the structured string to a flattened string representation.
      *
-     * @param string $inputString The structured string to be flattened.
-     * @return string The flattened string in dot notation.
+     * @param string $inputString The structured string.
+     * @return string The flattened string representation.
      */
     private function flattenString($inputString) {
         $result = "";
         $lines = explode("\n", $inputString);
-        $pathStack = [];
-        $currentSection = "";
+        $currentPath = [];
 
         foreach ($lines as $line) {
             if (preg_match('/^\[([^\]]+)\]$/', trim($line), $matches)) {
-                // New section starts
-                $currentSection = $matches[1];
-                $pathStack = []; // Reset path stack for new section
-            } elseif (strpos($line, '{') !== false) {
-                // Start a new block within the section
-                preg_match('/(\w+)\s*=\s*\{/', trim($line), $matches);
-                if ($matches) {
-                    $pathStack[] = $matches[1];
-                }
+                // Handle new sections
+                $currentPath = [$matches[1]];
+            } elseif (preg_match('/^(\w+)\s*=\s*\{/', trim($line), $matches)) {
+                // Handle new blocks within sections
+                $currentPath[] = $matches[1];
             } elseif (strpos($line, '}') !== false) {
-                // End of a block, pop the last path segment
-                array_pop($pathStack);
-            } elseif (preg_match('/(\w+)\s*=\s*(.*)/', trim($line), $matches)) {
+                // End of a block
+                array_pop($currentPath);
+            } elseif (preg_match('/^(\w+)\s*=\s*(.*)/', trim($line), $matches)) {
                 // Key-value pairs
-                $fullPath = !empty($pathStack) ? $currentSection . '.' . implode('.', $pathStack) . '.' . $matches[1] : $currentSection . '.' . $matches[1];
-                $result .= "$fullPath = {$matches[2]}\n";
+                $path = implode('.', $currentPath) . '.' . $matches[1];
+                $value = $matches[2];
+                // Ensure strings are wrapped in quotes
+                if (!is_numeric($value) && strtolower($value) !== 'true' && strtolower($value) !== 'false') {
+                    $value = '"' . trim($value, "\"'") . '"';
+                }
+                $result .= "$path = $value\n";
             }
         }
 
@@ -84,9 +109,9 @@ class SuperTomlConverter {
     }
 
     /**
-     * Parses a flattened string into an associative array.
+     * Parses the flattened string representation into an associative array.
      *
-     * @param string $flattenedString The flattened string to be parsed.
+     * @param string $flattenedString The flattened string representation.
      * @return array The associative array.
      */
     private function parseToAssociativeArray($flattenedString) {
@@ -95,7 +120,6 @@ class SuperTomlConverter {
 
         foreach ($lines as $line) {
             list($path, $value) = explode(' = ', $line, 2);
-            $value = trim($value); // Trim potential whitespace around the value
             $keys = explode('.', $path);
             $temp = &$result;
 
@@ -106,14 +130,12 @@ class SuperTomlConverter {
                 $temp = &$temp[$key];
             }
 
-            // Convert to appropriate data type
             if (is_numeric($value)) {
-                $temp = $value + 0; // Convert to numeric type
-            } elseif (strtolower($value) === "true" || strtolower($value) === "false") {
-                $temp = strtolower($value) === "true"; // Convert to boolean
+                $temp = $value + 0;
+            } elseif ($value === 'true' || $value === 'false') {
+                $temp = $value === 'true';
             } else {
-                // Preserve strings, including handling special characters
-                $temp = trim($value, '"');
+                $temp = trim($value, "\"'");
             }
         }
 
@@ -122,15 +144,26 @@ class SuperTomlConverter {
 }
 
 // Example usage
-$convertor = new SuperTomlConverter();
+$parser = new SuperTomlParser();
 $inputString = <<<EOT
 [db.info]
 master = {
      username = "root",
      password = "a#76dd1",
      driver = {
-           key = "jim"
-           remote = true
+           key = "jim",
+           remote = true,
+           use_pdo = false
+     }
+}
+
+[anotherdb.info]
+master = { 
+     username = "root",
+     password = "a#76dd1",
+     driver = {
+           key = "jim",
+           remote = true,
            use_pdo = false
      }
 }
@@ -138,9 +171,25 @@ master = {
 [github]
 username = "abc"
 password = "some#password123"
+
+[html]
+head = {
+   title = "test title",
+}
+body = {
+    div = {
+        id = "main",
+        class = "font-bold"
+        button = {
+            class = "font-bold",
+            htmx_get = "/contact"
+        }
+    }
+}
+
 EOT;
 
-$parsedArray = $convertor->convert($inputString);
+$parsedArray = $parser->parse($inputString);
 
 echo "Resulting Associative Array:\n";
 print_r($parsedArray);
