@@ -1,7 +1,9 @@
 <?php
 /* chat gpt 4:
 
-please write a php class named SuperTomlParser to convert the following string:
+This is a parser for Jim's Simple Markup Language (JSML)
+
+please write a php class named JSMLParser to convert the following string:
 [db.info]
 master = {
      username = "root",
@@ -60,7 +62,7 @@ show me the full php code
 
 */
 
-class SuperTomlParser {
+class JSMLParser {
     /**
      * Parses the structured string into an associative array.
      *
@@ -163,7 +165,7 @@ class SuperTomlParser {
 }
 
 // Example usage
-$parser = new SuperTomlParser();
+$parser = new JSMLParser();
 $inputString = <<<EOT
 [db.info]
 master = {
