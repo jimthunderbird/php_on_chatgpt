@@ -97,9 +97,14 @@ class SuperTomlParser {
                 // Key-value pairs, allowing for dashes in keys
                 $path = implode('.', $currentPath) . '.' . $matches[1];
                 $value = $matches[2];
-                // Ensure strings are wrapped in quotes
-                if (!is_numeric($value) && strtolower($value) !== 'true' && strtolower($value) !== 'false') {
-                    $value = '"' . trim($value, "\"'") . '"';
+                // Check if value is an array and keep it as-is if true
+                if (preg_match('/^\[.*\]$/', $value)) {
+                    // No need to trim quotes for array values
+                } else {
+                    // Ensure non-array strings are wrapped in quotes
+                    if (!is_numeric($value) && strtolower($value) !== 'true' && strtolower($value) !== 'false') {
+                        $value = '"' . trim($value, "\"'") . '"';
+                    }
                 }
                 $result .= "$path = $value\n";
             }
@@ -130,7 +135,21 @@ class SuperTomlParser {
                 $temp = &$temp[$key];
             }
 
-            if (is_numeric($value)) {
+            // Check if value is an array
+            if (preg_match('/^\[(.*)\]$/', $value, $matches)) {
+                // Parse the array value
+                $arrayValues = explode(', ', $matches[1]);
+                $temp = array_map(function($item) {
+                    $item = trim($item);
+                    if (is_numeric($item)) {
+                        return $item + 0;
+                    } elseif (strtolower($item) === 'true' || strtolower($item) === 'false') {
+                        return strtolower($item) === 'true';
+                    } else {
+                        return trim($item, "\"'");
+                    }
+                }, $arrayValues);
+            } elseif (is_numeric($value)) {
                 $temp = $value + 0;
             } elseif ($value === 'true' || $value === 'false') {
                 $temp = $value === 'true';
@@ -168,17 +187,22 @@ master = {
      }
 }
 
+# we can override the key
+[anotherdb.info.master]
+password = "12345678"
+
 [github]
 username = "abc"
 password = "some#password123"
+numbers = [1, "test", true]
 
 [html.structure]
 head = {
    title = "test title",
 }
-body = {
+body = { 
     div = {
-        id = "main",
+        id = "main-wrapper",
         class = "font-bold"
         button = {
             class = "font-bold",
