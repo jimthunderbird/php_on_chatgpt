@@ -87,14 +87,14 @@ class SuperTomlParser {
             if (preg_match('/^\[([^\]]+)\]$/', trim($line), $matches)) {
                 // Handle new sections
                 $currentPath = [$matches[1]];
-            } elseif (preg_match('/^(\w+)\s*=\s*\{/', trim($line), $matches)) {
-                // Handle new blocks within sections
+            } elseif (preg_match('/^([-\w]+)\s*=\s*\{/', trim($line), $matches)) {
+                // Handle new blocks within sections, allowing for dashes in keys
                 $currentPath[] = $matches[1];
             } elseif (strpos($line, '}') !== false) {
                 // End of a block
                 array_pop($currentPath);
-            } elseif (preg_match('/^(\w+)\s*=\s*(.*)/', trim($line), $matches)) {
-                // Key-value pairs
+            } elseif (preg_match('/^([-\w]+)\s*=\s*(.*)/', trim($line), $matches)) {
+                // Key-value pairs, allowing for dashes in keys
                 $path = implode('.', $currentPath) . '.' . $matches[1];
                 $value = $matches[2];
                 // Ensure strings are wrapped in quotes
@@ -182,7 +182,7 @@ body = {
         class = "font-bold"
         button = {
             class = "font-bold",
-            htmx_get = "/contact"
+            htmx-get = "/contact"
         }
     }
 }
