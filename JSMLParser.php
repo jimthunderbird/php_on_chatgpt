@@ -201,6 +201,10 @@ numbers = [1, "test", true]
 [html.structure]
 head = {
    title = "test title",
+   meta = {
+      name = "description"
+      content = "some description"
+   }
 }
 body = { 
     div = {
