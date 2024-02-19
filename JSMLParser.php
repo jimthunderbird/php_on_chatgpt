@@ -202,7 +202,7 @@ numbers = [1, "test", true]
 head = {
    title = "test title",
    meta = {
-      name = "description"
+      name = "description",
       content = "some description"
    }
 }
@@ -216,6 +216,10 @@ body = {
         }
     }
 }
+
+[user]
+name="jim2"
+email = "jim@somewebsite.com"
 
 EOT;
 
